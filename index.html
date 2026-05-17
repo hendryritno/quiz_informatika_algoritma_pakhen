@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ular Tangga - Quiz Algorithm & C++</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(145deg, #1a5f7a 0%, #0d3b4a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .game-container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255,241,184,0.95);
+            border-radius: 48px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.4);
+            padding: 20px;
+        }
+
+        .game-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #f9e7b3;
+            padding: 12px 20px;
+            border-radius: 60px;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        .players-info {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .player-card {
+            background: #fff0cf;
+            border-radius: 40px;
+            padding: 5px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .player-card.active {
+            background: #ffe0a3;
+            box-shadow: 0 0 0 3px gold, 0 4px 12px black;
+            transform: scale(1.02);
+        }
+
+        .score-badge {
+            font-size: 0.75rem;
+            background: #2c2b28;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-left: 8px;
+        }
+
+        .pawn-badge {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.2), 2px 2px 6px rgba(0,0,0,0.3);
+        }
+        .pawn-red { background: radial-gradient(circle at 30% 30%, #ff4d4d, #a12222); }
+        .pawn-blue { background: radial-gradient(circle at 30% 30%, #4d79ff, #102b77); }
+
+        .player-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            background: #ffaa33;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 8px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #b4621a;
+            transition: 0.07s linear;
+            font-family: inherit;
+        }
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #b4621a;
+        }
+        button:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        .dice-area {
+            background: #2c2b28;
+            border-radius: 20px;
+            padding: 8px 18px;
+            text-align: center;
+            color: white;
+        }
+        .dice-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: white;
+            color: #222;
+            display: inline-block;
+            width: 60px;
+            border-radius: 18px;
+            margin-left: 10px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            background-color: #f7e9c3;
+            border-radius: 30px;
+            padding: 12px;
+            gap: 4px;
+            box-shadow: inset 0 0 0 4px #c29a4b, 0 10px 20px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            background: #fff7e8;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #3a2c1f;
+            position: relative;
+            box-shadow: inset 0 0 0 1px #e9cf8b, 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .cell[data-special="ladder"] { background: #c8e6b5; }
+        .cell[data-special="snake"] { background: #f8c2b5; }
+
+        .pawn-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+            height: 100%;
+        }
+        .pawn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            z-index: 5;
+        }
+        .pawn.red { background: radial-gradient(circle at 35% 35%, #ff6b6b, #c72a2a); border: 1px solid #ffc107; }
+        .pawn.blue { background: radial-gradient(circle at 35% 35%, #5a8cff, #1230a5); border: 1px solid #ffe484; }
+
+        .board-wrapper {
+            position: relative;
+            margin: 10px 0;
+        }
+        .canvas-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Modal Soal */
+        .quiz-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .quiz-content {
+            background: linear-gradient(135deg, #fff5e6, #ffe0b5);
+            border-radius: 40px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 3px solid gold;
+        }
+        .quiz-question {
+            font-size: 1.2rem;
+            margin: 20px 0;
+            color: #2d1f00;
+            font-weight: bold;
+        }
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .quiz-option {
+            background: #ffdd99;
+            padding: 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .quiz-option:hover {
+            background: #ffcc77;
+            transform: scale(1.02);
+        }
+        .quiz-feedback {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        .notification {
+            background: #2d1f00;
+            color: #ffeaac;
+            padding: 12px;
+            border-radius: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+        @media (max-width: 550px) {
+            .cell { font-size: 0.65rem; }
+            .pawn { width: 22px; height: 22px; }
+            .quiz-question { font-size: 1rem; }
+        }
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 10px;
+            color: #4e3b20;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="game-header">
+        <div class="players-info">
+            <div class="player-card" id="player1Card">
+                <div class="pawn-badge pawn-red"></div>
+                <span class="player-name">🔴 Merah</span>
+                <span class="score-badge" id="score1">Skor: 0</span>
+            </div>
+            <div class="player-card" id="player2Card">
+                <div class="pawn-badge pawn-blue"></div>
+                <span class="player-name">🔵 Biru</span>
+                <span class="score-badge" id="score2">Skor: 0</span>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="rollBtn">🎲 Lempar Dadu</button>
+            <button id="resetBtn">🔄 Reset</button>
+        </div>
+        <div class="dice-area">
+            🎲 Dadu: <span id="diceResult" class="dice-value">-</span>
+        </div>
+    </div>
+
+    <div class="board-wrapper">
+        <div class="board" id="board"></div>
+        <canvas id="snakeLadderCanvas" class="canvas-lines"></canvas>
+    </div>
+
+    <div id="notification" class="notification">
+        🎮 Giliran: Pemain Merah. Klik Lempar Dadu & Jawab Soal!
+    </div>
+    <footer>📚 Setiap lempar dadu harus menjawab soal! Jawaban benar = maju, salah = diam. Skor bertambah jika benar.</footer>
+</div>
+
+<!-- Modal Quiz -->
+<div id="quizModal" class="quiz-modal">
+    <div class="quiz-content">
+        <h3>📖 Soal Algoritma & Pemrograman C++</h3>
+        <div id="quizQuestion" class="quiz-question"></div>
+        <div id="quizOptions" class="quiz-options"></div>
+        <div id="quizFeedback" class="quiz-feedback"></div>
+    </div>
+</div>
+
+<script>
+    // ======================== BANK SOAL (50 Soal) ========================
+    const questions = [
+        { text: "Apa kepanjangan dari IDE dalam pemrograman?", options: ["Integrated Development Environment", "Internal Data Editor", "Interface Design Engine", "Integrated Design Environment"], correct: 0 },
+        { text: "Manakah yang merupakan tipe data bilangan bulat dalam C++?", options: ["float", "double", "int", "char"], correct: 2 },
+        { text: "Apa output dari `cout << (5 > 3);`?", options: ["1", "true", "0", "false"], correct: 0 },
+        { text: "Sintaks untuk mendeklarasikan variabel konstanta di C++?", options: ["const", "constant", "define", "final"], correct: 0 },
+        { text: "Manakah operator logika AND dalam C++?", options: ["&", "&&", "||", "!"], correct: 1 },
+        { text: "Apa fungsi dari `#include <iostream>`?", options: ["Input output stream", "String manipulation", "Matematika", "File handling"], correct: 0 },
+        { text: "Perulangan yang menjamin dijalankan minimal satu kali?", options: ["for", "while", "do-while", "foreach"], correct: 2 },
+        { text: "Manakah yang merupakan struktur percabangan?", options: ["if-else", "for", "while", "do-while"], correct: 0 },
+        { text: "Apa output dari `cout << 10 % 3;`?", options: ["1", "3", "0", "2"], correct: 0 },
+        { text: "Manakah yang termasuk array dimensi satu?", options: ["int arr[5];", "int arr[3][3];", "int arr[];", "arr[5];"], correct: 0 },
+        { text: "Apa fungsi dari `break` dalam loop?", options: ["Menghentikan loop", "Melanjutkan iterasi", "Keluar program", "Error"], correct: 0 },
+        { text: "Manakah tipe data untuk karakter?", options: ["string", "char", "text", "chr"], correct: 1 },
+        { text: "Siapa penemu bahasa C++?", options: ["Dennis Ritchie", "Bjarne Stroustrup", "James Gosling", "Guido van Rossum"], correct: 1 },
+        { text: "Apa output dari `int a=5; cout << ++a;`?", options: ["5", "6", "4", "error"], correct: 1 },
+        { text: "Manakah simbol untuk komentar satu baris di C++?", options: ["//", "/*", "#", "<!--"], correct: 0 },
+        { text: "Fungsi `main()` dalam C++ bersifat?", options: ["Wajib", "Opsional", "Hanya untuk dekorasi", "Deklarasi"], correct: 0 },
+        { text: "Apa itu algoritma?", options: ["Langkah-langkah logis", "Bahasa pemrograman", "Komputer", "Software"], correct: 0 },
+        { text: "Manakah yang termasuk tipe data pecahan?", options: ["double", "int", "bool", "char"], correct: 0 },
+        { text: "Operator `+=` adalah contoh dari?", options: ["Assignment", "Aritmatika", "Logika", "Bitwise"], correct: 0 },
+        { text: "Apa output dari `cout << (7 == 7);`?", options: ["1", "0", "true", "false"], correct: 0 },
+        { text: "Pernyataan yang benar tentang `while`?", options: ["Memeriksa kondisi di awal", "Memeriksa di akhir", "Tidak ada kondisi", "Minimal dijalankan sekali"], correct: 0 },
+        { text: "Manakah keyword untuk mengembalikan nilai fungsi?", options: ["return", "void", "break", "continue"], correct: 0 },
+        { text: "Array index pertama dimulai dari?", options: ["0", "1", "2", "-1"], correct: 0 },
+        { text: "Apa output dari `cout << (10 > 5 && 3 < 1);`?", options: ["0", "1", "true", "false"], correct: 0 },
+        { text: "Fungsi untuk membaca input dari user di C++?", options: ["cin >>", "scanf", "gets", "input"], correct: 0 },
+        { text: "Manakah pembuatan pointer yang benar?", options: ["int *ptr;", "int ptr;", "ptr int;", "&ptr;"], correct: 0 },
+        { text: "Struktur data LIFO adalah?", options: ["Stack", "Queue", "Array", "Tree"], correct: 0 },
+        { text: "Apa kepanjangan dari OOP?", options: ["Object Oriented Programming", "Operational Program", "Open Protocol", "Output Oriented"], correct: 0 },
+        { text: "Manakah akses modifier private?", options: ["Hanya diakses kelas sendiri", "Semua kelas", "Hanya turunan", "Global"], correct: 0 },
+        { text: "Apa output dari `for(int i=0;i<3;i++) cout<<i;`?", options: ["012", "123", "0 1 2", "error"], correct: 0 },
+        { text: "Fungsi `sizeof()` digunakan untuk?", options: ["Ukuran memori", "Panjang string", "Jumlah elemen", "Alamat memori"], correct: 0 },
+        { text: "Manakah yang termasuk rekursif?", options: ["Fungsi memanggil dirinya", "Perulangan", "Percabangan", "Array"], correct: 0 },
+        { text: "Apa output dari `int x=3; cout << x++;`?", options: ["3", "4", "2", "error"], correct: 0 },
+        { text: "Manakah keyword untuk inheritance?", options: [":", "extends", "implements", "inherits"], correct: 0 },
+        { text: "Apa itu `namespace std`?", options: ["Standard library", "Custom namespace", "Variabel", "Fungsi"], correct: 0 },
+        { text: "Manakah yang benar tentang `switch-case`?", options: ["Membandingkan kesamaan", "Rentang nilai", "Kondisi kompleks", "Looping"], correct: 0 },
+        { text: "Tipe data boolean memiliki nilai?", options: ["true/false", "0/1 saja", "ya/tidak", "on/off"], correct: 0 },
+        { text: "Apa output dari `cout << (5 >= 5);`?", options: ["1", "0", "true", "false"], correct: 0 },
+        { text: "Manakah fungsi untuk menghentikan program?", options: ["exit()", "break", "return", "stop()"], correct: 0 },
+        { text: "Apa itu `&` dalam konteks variabel?", options: ["Alamat memori", "Referensi", "Pointer", "Bitwise AND"], correct: 0 },
+        { text: "Sintaks untuk membuat kelas di C++?", options: ["class Nama{};", "Class Nama{};", "object Nama;", "new Nama;"], correct: 0 },
+        { text: "Manakah yang benar tentang `virtual` function?", options: ["Polimorfisme", "Overloading", "Overriding", "Constructor"], correct: 0 },
+        { text: "Apa output dari `cout << (3*2+4/2);`?", options: ["8", "7", "6", "9"], correct: 0 },
+        { text: "Manakah library untuk matematika di C++?", options: ["<cmath>", "<math.h>", "<math>", "<calculus>"], correct: 0 },
+        { text: "Apa kegunaan `new` operator?", options: ["Alokasi memori dinamis", "Membuat objek", "Delete memori", "Pointer"], correct: 0 },
+        { text: "Manakah yang merupakan sorting algoritma?", options: ["Bubble sort", "Quick search", "Binary tree", "Hash map"], correct: 0 },
+        { text: "Apa output dari `int a[3]={1,2,3}; cout<<a[1];`?", options: ["2", "1", "3", "0"], correct: 0 },
+        { text: "Manakah yang benar tentang `const` member function?", options: ["Tidak mengubah data member", "Mengubah data", "Static", "Virtual"], correct: 0 },
+        { text: "Apa singkatan dari STL?", options: ["Standard Template Library", "Standard Text Library", "System Template", "Simple Template Library"], correct: 0 },
+    ];
+
+    // Peta ular tangga
+    const snakesAndLadders = {
+        4: 25, 8: 30, 21: 42, 28: 84, 50: 67, 71: 92, 80: 99,
+        32: 10, 36: 6, 48: 26, 62: 18, 88: 24, 95: 75, 97: 78
+    };
+    
+    let cells = [];
+    let players = [
+        { id: 0, name: "Merah", color: "red", position: 1, score: 0, element: null },
+        { id: 1, name: "Biru", color: "blue", position: 1, score: 0, element: null }
+    ];
+    let currentPlayer = 0;
+    let gameActive = true;
+    let winner = null;
+    let animationInProgress = false;
+    let pendingDiceValue = null;
+    let currentQuestionObj = null;
+    
+    const boardEl = document.getElementById("board");
+    const rollBtn = document.getElementById("rollBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const diceResultSpan = document.getElementById("diceResult");
+    const notificationEl = document.getElementById("notification");
+    const player1Card = document.getElementById("player1Card");
+    const player2Card = document.getElementById("player2Card");
+    const score1El = document.getElementById("score1");
+    const score2El = document.getElementById("score2");
+    const canvas = document.getElementById("snakeLadderCanvas");
+    const quizModal = document.getElementById("quizModal");
+    const quizQuestionEl = document.getElementById("quizQuestion");
+    const quizOptionsEl = document.getElementById("quizOptions");
+    const quizFeedbackEl = document.getElementById("quizFeedback");
+    
+    let ctx = canvas.getContext("2d");
+    
+    // Ambil soal acak
+    function getRandomQuestion() {
+        const randomIndex = Math.floor(Math.random() * questions.length);
+        return { ...questions[randomIndex], index: randomIndex };
+    }
+    
+    // Tampilkan modal quiz
+    function showQuiz(diceValue) {
+        pendingDiceValue = diceValue;
+        currentQuestionObj = getRandomQuestion();
+        quizQuestionEl.innerText = currentQuestionObj.text;
+        quizOptionsEl.innerHTML = "";
+        currentQuestionObj.options.forEach((opt, idx) => {
+            const optDiv = document.createElement("div");
+            optDiv.classList.add("quiz-option");
+            optDiv.innerText = `${String.fromCharCode(65+idx)}. ${opt}`;
+            optDiv.onclick = () => checkAnswer(idx);
+            quizOptionsEl.appendChild(optDiv);
+        });
+        quizFeedbackEl.innerHTML = "";
+        quizModal.style.display = "flex";
+    }
+    
+    function checkAnswer(selectedIdx) {
+        const isCorrect = (selectedIdx === currentQuestionObj.correct);
+        const player = players[currentPlayer];
+        if (isCorrect) {
+            player.score += 10;
+            updateScoresUI();
+            quizFeedbackEl.innerHTML = "✅ JAWABAN BENAR! +10 SKOR. Anda akan maju!";
+            quizFeedbackEl.style.color = "green";
+            setTimeout(() => {
+                quizModal.style.display = "none";
+                processMoveAfterQuiz(true, pendingDiceValue);
+            }, 1200);
+        } else {
+            player.score -= 5;
+            if (player.score < 0) player.score = 0;
+            updateScoresUI();
+            const correctAnswerText = currentQuestionObj.options[currentQuestionObj.correct];
+            quizFeedbackEl.innerHTML = `❌ SALAH! Skor -5. Jawaban benar: ${correctAnswerText}. Anda TIDAK maju.`;
+            quizFeedbackEl.style.color = "red";
+            setTimeout(() => {
+                quizModal.style.display = "none";
+                processMoveAfterQuiz(false, pendingDiceValue);
+            }, 1500);
+        }
+        // disable klik option sementara
+        const allOpts = document.querySelectorAll(".quiz-option");
+        allOpts.forEach(opt => opt.style.pointerEvents = "none");
+    }
+    
+    async function processMoveAfterQuiz(canMove, diceValue) {
+        if (!gameActive || winner !== null) return;
+        const player = players[currentPlayer];
+        if (canMove) {
+            let newPos = player.position + diceValue;
+            if (newPos > 100) {
+                notificationEl.innerText = `${player.name} mendapat ${diceValue} tapi melebihi 100! tidak maju.`;
+                endTurn();
+                return;
+            }
+            notificationEl.innerText = `${player.name} menjawab benar! Maju ${diceValue} langkah.`;
+            await animateMove(player, player.position, newPos, async () => {
+                let finalPos = newPos;
+                if (snakesAndLadders[finalPos]) {
+                    const dest = snakesAndLadders[finalPos];
+                    const type = dest > finalPos ? "Tangga 🪜" : "Ular 🐍";
+                    notificationEl.innerText = `${player.name} ${type}! dari ${finalPos} ke ${dest}`;
+                    await animateMove(player, finalPos, dest, () => {});
+                    finalPos = dest;
+                }
+                player.position = finalPos;
+                updatePawnsDisplay();
+                if (player.position === 100) {
+                    gameActive = false;
+                    winner = player;
+                    notificationEl.innerText = `🏆🎉 SELAMAT! ${player.name} MENANG! Skor akhir: ${player.score} 🎉🏆`;
+                    rollBtn.disabled = true;
+                    return;
+                }
+                endTurn();
+            });
+        } else {
+            notificationEl.innerText = `${player.name} menjawab salah! Tidak jadi maju. Giliran berganti.`;
+            endTurn();
+        }
+    }
+    
+    async function animateMove(player, startPos, endPos, onComplete) {
+        animationInProgress = true;
+        rollBtn.disabled = true;
+        let step = startPos;
+        const diff = endPos - startPos;
+        const direction = Math.sign(diff);
+        if (diff === 0) {
+            animationInProgress = false;
+            rollBtn.disabled = false;
+            onComplete();
+            return;
+        }
+        function stepMove() {
+            if (step === endPos) {
+                updatePawnsDisplay();
+                animationInProgress = false;
+                rollBtn.disabled = false;
+                onComplete();
+                return;
+            }
+            step += direction;
+            player.position = step;
+            updatePawnsDisplay();
+            setTimeout(() => stepMove(), 35);
+        }
+        stepMove();
+    }
+    
+    function endTurn() {
+        if (winner !== null) return;
+        currentPlayer = (currentPlayer + 1) % 2;
+        notificationEl.innerText = `🎲 Giliran: ${players[currentPlayer].name}. Klik Lempar Dadu & Jawab Soal!`;
+        updatePawnsDisplay();
+        diceResultSpan.innerText = "-";
+        rollBtn.disabled = false;
+    }
+    
+    function rollDiceAndQuiz() {
+        if (!gameActive || winner !== null) {
+            notificationEl.innerText = winner ? "Permainan selesai! Tekan Reset." : "Tunggu giliran...";
+            return;
+        }
+        if (animationInProgress) {
+            notificationEl.innerText = "Tunggu animasi selesai!";
+            return;
+        }
+        let rolls = 0;
+        const maxRolls = 8;
+        let interval = setInterval(() => {
+            const rand = Math.floor(Math.random() * 6) + 1;
+            diceResultSpan.innerText = rand;
+            rolls++;
+            if (rolls >= maxRolls) {
+                clearInterval(interval);
+                const finalDice = parseInt(diceResultSpan.innerText);
+                showQuiz(finalDice);
+            }
+        }, 70);
+    }
+    
+    function updateScoresUI() {
+        score1El.innerText = `Skor: ${players[0].score}`;
+        score2El.innerText = `Skor: ${players[1].score}`;
+    }
+    
+    function updatePawnsDisplay() {
+        for (let i = 1; i <= 100; i++) {
+            if (cells[i]) cells[i].pawnContainer.innerHTML = "";
+        }
+        for (let p of players) {
+            if (!p.element) continue;
+            const pawnClone = p.element.cloneNode(true);
+            if (cells[p.position]) cells[p.position].pawnContainer.appendChild(pawnClone);
+        }
+        if (winner === null) {
+            if (currentPlayer === 0) player1Card.classList.add("active");
+            else player1Card.classList.remove("active");
+            if (currentPlayer === 1) player2Card.classList.add("active");
+            else player2Card.classList.remove("active");
+        } else {
+            player1Card.classList.remove("active");
+            player2Card.classList.remove("active");
+        }
+    }
+    
+    function buildBoard() {
+        boardEl.innerHTML = "";
+        const rows = 10, cols = 10;
+        const grid = [];
+        for (let row = rows-1; row >= 0; row--) {
+            let rowCells = [];
+            if ((rows-1 - row) % 2 === 0) {
+                for (let col = 0; col < cols; col++) rowCells.push(row * cols + (col + 1));
+            } else {
+                for (let col = cols-1; col >= 0; col--) rowCells.push(row * cols + (col + 1));
+            }
+            grid.push(rowCells);
+        }
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const number = grid[r][c];
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.setAttribute("data-number", number);
+                const special = snakesAndLadders[number] ? (snakesAndLadders[number] > number ? "ladder" : "snake") : "";
+                if (special) cell.setAttribute("data-special", special);
+                const numberSpan = document.createElement("span");
+                numberSpan.innerText = number;
+                numberSpan.style.fontSize = "0.7rem";
+                const pawnContainer = document.createElement("div");
+                pawnContainer.classList.add("pawn-container");
+                cell.appendChild(numberSpan);
+                cell.appendChild(pawnContainer);
+                boardEl.appendChild(cell);
+                cells[number] = { cell, pawnContainer };
+            }
+        }
+        for (let p of players) {
+            const pawnDiv = document.createElement("div");
+            pawnDiv.classList.add("pawn", p.color);
+            p.element = pawnDiv;
+        }
+        updatePawnsDisplay();
+    }
+    
+    function drawLinesOnCanvas() {
+        if (!ctx || !cells[1]) return;
+        const boardRect = document.getElementById("board").getBoundingClientRect();
+        canvas.width = boardRect.width;
+        canvas.height = boardRect.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let [start, end] of Object.entries(snakesAndLadders)) {
+            start = parseInt(start); end = parseInt(end);
+            const startDiv = cells[start]?.cell, endDiv = cells[end]?.cell;
+            if (!startDiv || !endDiv) continue;
+            const sRect = startDiv.getBoundingClientRect(), eRect = endDiv.getBoundingClientRect();
+            const x1 = sRect.left + sRect.width/2 - boardRect.left;
+            const y1 = sRect.top + sRect.height/2 - boardRect.top;
+            const x2 = eRect.left + eRect.width/2 - boardRect.left;
+            const y2 = eRect.top + eRect.height/2 - boardRect.top;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = end > start ? "#2e7d32" : "#bf360c";
+            ctx.lineWidth = 5;
+            ctx.setLineDash(end > start ? [8,6] : [4,8]);
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+    }
+    
+    function resetGame() {
+        gameActive = true;
+        winner = null;
+        currentPlayer = 0;
+        players[0] = { ...players[0], position: 1, score: 0 };
+        players[1] = { ...players[1], position: 1, score: 0 };
+        updateScoresUI();
+        updatePawnsDisplay();
+        diceResultSpan.innerText = "-";
+        notificationEl.innerText = "🔄 Game direset! Giliran Pemain Merah.";
+        rollBtn.disabled = false;
+        animationInProgress = false;
+        drawLinesOnCanvas();
+    }
+    
+    rollBtn.addEventListener("click", rollDiceAndQuiz);
+    resetBtn.addEventListener("click", resetGame);
+    window.addEventListener("resize", () => setTimeout(drawLinesOnCanvas, 100));
+    new ResizeObserver(() => drawLinesOnCanvas()).observe(document.getElementById("board"));
+    
+    buildBoard();
+    resetGame();
+</script>
+</body>
+</html>
